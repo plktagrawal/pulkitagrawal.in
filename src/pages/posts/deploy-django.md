@@ -47,4 +47,11 @@ This will run the django installation on your local machine which will verify th
 8. Install git and docker on the VPS
 9. Generate SSH keypair on the VPS. Provide the public key as **Deploy Keys** to the github repo. Do not provide write access.
 10. Clone the repo on the VPS using the SSH access.
-11. 
+11. Setup environment variables in the server
+12. CI/CD pipeline
+   1. Go into the directory
+   2. shutdown docker
+   3. pull git repo
+   4. docker compose again
+   5. run django migrations
+13. 
