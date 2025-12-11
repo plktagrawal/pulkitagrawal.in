@@ -1,3 +1,11 @@
+---
+title: Docker Crash Course
+author: Pulkit Agrawal
+description: "The docker cheat sheet."
+pubDate: 2025-11-28
+tags: ["docker", "learning in public"]
+---
+
 # Docker
 
 In this post we will learn Docker.
@@ -11,6 +19,7 @@ It is a tool on top of which you can run an application. Docker provides a stand
 ## Installation
 
 Install docker desktop using the instructions on docker website.
+https://www.docker.com/products/docker-desktop/ 
 
 ## Core Concepts
 
@@ -138,19 +147,19 @@ Use the `push` command.
 # 1. Select an OS
 FROM Ubuntu
 
-2. Update the `apt` repo
+#2. Update the `apt` repo
 RUN apt-get update
 
-3. Install dependencies using `apt`
+# 3. Install dependencies using `apt`
 RUN apt-get install python
 
-4. Install python dependencies using `pip`
+# 4. Install python dependencies using `pip`
 RUN pip install django django-ninja
 
-5. Copy source code into the /opt folder
+# 5. Copy source code into the /opt folder
 COPY . /opt/source-code
 
-6. Run the application using the appropriate command (`python manage.py runserver`)
+# 6. Run the application using the appropriate command (`python manage.py runserver`)
 # We can also have an entrypoint here
 CMD ["python", "manage.py" "runserver"]
 ```
@@ -163,22 +172,147 @@ Use the `history` command to see all the layers in an image.
 `docker history <image name>`
 
 ## Networking
-Docker makes three tpes of networks:
+Docker makes three types of networks:
 
-1. Bridge - the internal network. All containers can network with other containers in the same host but not with the outside world. It is the *Default* option.
+1. **Bridge** - the internal network. All containers can network with other containers in the same host but not with the outside world. It is the *Default* option.
 `docker run nginx`
 
-2. None
-Creates totally isolated containers -- not connected to each other or to the host network.
+2. **None** - Creates totally isolated containers -- not connected to each other or to the host network.
 `docker run nginx --network=none`
 
-3. Host
-Containers are assigened a port on the host network so they can communicate with the outside world.
+3. **Host** - Containers are assigened a port on the host network so they can communicate with the outside world.
 `docker run nginx --network=host`
 
 ### List all existing networks
 `docker network ls`
 
 ### Create You Own Network
-`docker network create \
-   --`
+You can create your own internal networks to isolate groups of containers.
+
+```shell
+docker network create \
+   --driver <network type> \
+   --subnet <network id> \
+   <network name> 
+```
+
+For example:
+```shell
+docker network create \
+   --driver bridge \
+   --subnet 182.18.0.0/16 \
+   my-awesome-network 
+```
+
+### See all networks
+Run the `docker network inspect` command
+
+### Accessing containers with names
+- Using internal IPs is not guaranteed. On reboot, they may change.
+- All containers can reach each other using their names.
+
+You can name containers when running them using the `--name` flag
+`docker run --name=mydb mysql`
+
+Link containers with each other 
+
+## Storage
+
+### Filesystem
+Docker stores all data inside `/var/lib/docker` folder
+
+This folder has subfolders such as `images`, `containers` and `volumes`
+
+### Volumes
+Used for persistent data.
+
+#### Create Volumes
+Use this command to make a new volume:
+`docker volume create <volume name>`
+
+For example:
+`docker volume create my-awesome-volume`
+
+The volume will be stores inside `/var/lib/docker/volumes`
+
+#### Mount a Volume
+When running a container mount a volume using `-v` tag.
+
+`docker run -v <volume name>:<path inside container> mysql`
+
+For example:
+
+`docker run -v my-awesome-volume:/var/lib/mysql mysql`
+
+In this case, `var/lib/mysql` is the default location used by the mysql container to store data. By mounting a volume at this path we have made sure the container data is stored outside the container, in a volume, which makes the data not perish when the container is deleted.
+
+### Mount a folder
+
+#### The Old Way using `-v` tag
+You can also mount a folder by providing the folder's full path instead of the volume name.
+
+`docker run -v <folder path>:<path inside container> mysql`
+
+For example:
+
+`docker run -v /desktop/mydata/mysql:/var/lib/mysql mysql`
+
+#### The New Way using the `--mount` tag and Key-Value Pairs
+The above commands are more explicit in the new way.
+
+```shell
+docker run \
+   --mount type=bind \
+   source=/desktop/mydata/mysql \
+   target=/var/lib/mysql \
+   mysql
+```
+
+## Registry
+
+`docker run nginx` actually resolves to `docker run docker.io/nginx/nginx`
+
+Here:
+- `docker.io` is the registry
+- `nginx` is the user
+- `nginx` is the image
+
+### Private Registry
+1. First login to the registry
+
+```shell
+docker login private-registry.io
+```
+
+Provide `username` and `password` when prompted.
+
+2. Then run the repo inside the private regitry
+
+```shell
+docker run private-registry.io/apps/internal-app
+```
+
+#### Docker Self Hosted Registry
+Docker provides a self hostable registry as a docker container. It runs on port 5000. Run it with this command.
+
+`docker run -d -p 5000:5000 --restart=always --name registry registry:3`
+
+Now the registry is running on localhost port 5000. Make a image on the registry with the following command.
+
+`docker image tag my-image localhost:5000/myimage`
+
+`docker push localhost:5000/my-image` will push the image to the registry.
+
+`docker pull localhost:5000/my-image` will pull the image from the registry.
+
+#### The `-H` tag to run docker CLI from a remote machine
+Suppose you have docker engine running on a server. You can run any command from your laptop on that server using the `-H` tag.
+
+```shell
+docker -H=<serverIP address and port> run nginx
+
+# Here is an example
+docker run -H=10.123.2.1:2375 run nginx
+```
+
+

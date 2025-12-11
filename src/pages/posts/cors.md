@@ -1,3 +1,11 @@
+---
+title: CORS
+author: Pulkit Agrawal
+description: "Understand CORS once and for all."
+pubDate: 2025-12-11
+tags: ["cors", "web", "learning in public"]
+---
+
 # CORS: Cross-Origin Resource Sharing
 
 CORS is a browser security feature, not a server security feature.
